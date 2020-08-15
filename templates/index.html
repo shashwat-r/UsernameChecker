@@ -1,0 +1,15 @@
+{{ template "header.html" .}}
+  <p>{{.username}}</p>
+  <table>
+	{{range .results }}
+      <tr>
+      	<td><img src="./resources/{{.Type}}.png" style="height:16px; width:16px; margin-right: 5px"></td>
+      	<td>{{.Name}}</td>
+      </tr>
+	{{end}}
+  </table>
+  <script>
+    document.getElementsByTagName("input")[0].focus()
+  </script>
+  
+{{ template "footer.html" .}}
