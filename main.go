@@ -24,11 +24,31 @@ var (
 	client = http.Client{
 		Timeout: time.Second * 10,
 	}
-	checkerMap = map[string]func(string) (bool, error){
-		"codeforces": getCodeforcesResult,
-		"codechef":   getCodechefResult,
+	results = []result{
+		{
+			Name:     "codeforces",
+			function: getCodeforcesResult,
+		},
+		{
+			Name:     "codechef",
+			function: getCodechefResult,
+		},
+		{
+			Name:     "kaggle",
+			function: getKaggleResult,
+		},
+		{
+			Name:     "medium",
+			function: getMediumResult,
+		},
 	}
 )
+
+type result struct {
+	Name     string
+	Status   string
+	function func(string) (bool, error)
+}
 
 func main() {
 	var err error
@@ -56,7 +76,7 @@ func initRoutes() error {
 	router.Static("resources", path)
 
 	router.GET("/", func(c *gin.Context) {
-		results := getInitialResults()
+		initialiseResults()
 		vals := c.Request.URL.Query()
 		username := vals.Get("username")
 		if username == "" {
@@ -69,50 +89,41 @@ func initRoutes() error {
 	return nil
 }
 
-type result struct {
-	Name string
-	Type string
-}
-
-func getInitialResults() []result {
-	var results []result
-	for k, _ := range checkerMap {
-		results = append(results, result{
-			Name: k,
-			Type: Start,
-		})
+func initialiseResults() {
+	for i, _ := range results {
+		results[i].Status = Start
 	}
-	return results
 }
 
 func getResults(name string, results []result) []result {
 	var resultMap sync.Map
 	var wg sync.WaitGroup
 
-	for k, fn := range checkerMap {
+	for _, resStruct := range results {
+		res := resStruct
 		wg.Add(1)
-		go func(name string, k string) {
+		go func() {
 			defer wg.Done()
-			val, err := fn(name)
-			var res string
+			val, err := res.function(name)
+			var status string
 			if err != nil {
-				res = Maybe
+				status = Maybe
 			} else if val {
-				res = No
+				status = No
 			} else {
-				res = Yes
+				status = Yes
 			}
-			resultMap.Store(k, res)
-		}(name, k)
+			resultMap.Store(res.Name, status)
+		}()
 	}
 	wg.Wait()
 
 	for i := range results {
 		resType, ok := resultMap.Load(results[i].Name)
 		if !ok {
-			results[i].Type = Maybe
+			results[i].Status = Maybe
 		} else {
-			results[i].Type = resType.(string)
+			results[i].Status = resType.(string)
 		}
 	}
 	return results
@@ -122,6 +133,9 @@ func makeRequest(req *http.Request) (string, error) {
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", err
+	}
+	if resp.StatusCode == http.StatusNotFound {
+		return "", nil
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {

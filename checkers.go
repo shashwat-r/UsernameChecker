@@ -38,3 +38,33 @@ func getCodechefResult(name string) (bool, error) {
 	identificationStr := "\"/users/" + name + "/teams\""
 	return strings.Contains(resp, identificationStr), nil
 }
+
+// getKaggleResult checks if the username exists on codeforces by
+// checking for the "/users/<username>/teams" string in the html response
+func getKaggleResult(name string) (bool, error) {
+	req, err := http.NewRequest("GET", "https://www.kaggle.com/"+name, nil)
+	if err != nil {
+		return false, err
+	}
+	resp, err := makeRequest(req)
+	if err != nil {
+		return false, err
+	}
+
+	identificationStr := "\"/" + name + "/activity.json\""
+	return strings.Contains(resp, identificationStr), nil
+}
+
+func getMediumResult(name string) (bool, error) {
+	req, err := http.NewRequest("GET", "https://www.medium.com/@"+name, nil)
+	if err != nil {
+		return false, err
+	}
+	resp, err := makeRequest(req)
+	if err != nil {
+		return false, err
+	}
+
+	identificationStr := ">Follow</button>"
+	return strings.Contains(resp, identificationStr), nil
+}
