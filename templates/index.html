@@ -1,5 +1,9 @@
 {{ template "header.html" .}}
-  <p>{{.username}}</p>
+  {{if ne $.username ""}}
+    <p>{{.username}}</p>
+  {{else}}
+    <p style="font-style:italic; color:#888888">username field empty</p>
+  {{end}}
   <table>
 	{{range .results }}
       <tr>

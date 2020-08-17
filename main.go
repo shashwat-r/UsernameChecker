@@ -79,11 +79,9 @@ func initRoutes() error {
 		initialiseResults()
 		vals := c.Request.URL.Query()
 		username := vals.Get("username")
-		if username == "" {
-			c.HTML(http.StatusOK, "index.html", gin.H{"title": "Username Checker", "username": "<blank>", "results": results})
-			return
+		if username != "" {
+			results = getResults(username, results)
 		}
-		results = getResults(username, results)
 		c.HTML(http.StatusOK, "index.html", gin.H{"title": "Username Checker", "username": username, "results": results})
 	})
 	return nil
